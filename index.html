@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Gerador de Recibo</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg: #0c0c0c;
+  --card: #141414;
+  --card2: #1a1a1a;
+  --border: #2c2c2c;
+  --acc: #f0d060;
+  --acc-dim: rgba(240,208,96,0.12);
+  --text: #e8e8e8;
+  --muted: #606060;
+  --red: #e05555;
+  --green: #55c888;
+  --radius: 12px;
+  --r-sm: 8px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html { font-size: 16px; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+  padding-bottom: 100px;
+}
+
+/* ── HEADER ── */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(12,12,12,0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header-left { display: flex; align-items: center; gap: 10px; }
+
+.logo-badge {
+  background: var(--acc);
+  color: #000;
+  font-family: 'DM Mono', monospace;
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.header-title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: var(--text);
+}
+
+.header-sub {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+/* ── STEPS NAV ── */
+.steps-nav {
+  display: flex;
+  padding: 0 20px;
+  gap: 0;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.steps-nav::-webkit-scrollbar { display: none; }
+
+.step-tab {
+  flex: 1;
+  min-width: 70px;
+  padding: 14px 8px;
+  text-align: center;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  text-transform: uppercase;
+  user-select: none;
+  touch-action: manipulation;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.step-tab.active {
+  color: var(--acc);
+  border-bottom-color: var(--acc);
+}
+
+/* ── PAGES ── */
+.page { display: none; padding: 20px; }
+.page.active { display: block; }
+
+/* ── SECTION ── */
+.section-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--acc);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── FIELD ── */
+.field { margin-bottom: 14px; }
+
+.field label {
+  display: block;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.field input, .field select, .field textarea {
+  width: 100%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  padding: 13px 16px;
+  border-radius: var(--r-sm);
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color: var(--acc);
+  background: #1a1a12;
+}
+
+.field input::placeholder { color: var(--muted); font-size: 14px; }
+
+.field select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23606060' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 40px;
+  cursor: pointer;
+}
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* ── TOGGLE ── */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 16px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  transition: border-color 0.15s;
+  min-height: 54px;
+}
+
+.toggle-row.active { border-color: var(--acc); background: var(--acc-dim); }
+
+.toggle-row-label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.toggle-row.active .toggle-row-label { color: var(--acc); }
+
+.toggle-switch {
+  width: 42px;
+  height: 24px;
+  background: var(--border);
+  border-radius: 12px;
+  position: relative;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.toggle-row.active .toggle-switch { background: var(--acc); }
+
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  background: #fff;
+  border-radius: 50%;
+  top: 3px;
+  left: 3px;
+  transition: transform 0.2s;
+}
+
+.toggle-row.active .toggle-switch::after { transform: translateX(18px); }
+
+.toggle-content {
+  display: none;
+  padding: 14px 0 2px;
+}
+
+.toggle-content.show { display: block; }
+
+/* ── LOGO UPLOAD ── */
+.logo-upload {
+  border: 1.5px dashed var(--border);
+  border-radius: var(--r-sm);
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.15s;
+  background: var(--card);
+  display: block;
+  touch-action: manipulation;
+  -webkit-appearance: none;
+}
+
+.logo-upload:active { border-color: var(--acc); background: var(--acc-dim); }
+
+.logo-upload-icon { font-size: 28px; margin-bottom: 8px; }
+
+.logo-upload-text {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.logo-upload-preview {
+  max-height: 80px;
+  max-width: 160px;
+  object-fit: contain;
+  filter: grayscale(1);
+  display: none;
+  margin: 0 auto;
+}
+
+/* ── EXTRAS ── */
+.extras-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+
+.extra-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 40px;
+  gap: 8px;
+  align-items: center;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+}
+
+.extra-row input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  padding: 6px 0;
+  font-size: 14px;
+}
+
+.extra-row input:focus { border-bottom-color: var(--acc); }
+
+.btn-del {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--red);
+  border-radius: 6px;
+  width: 44px;
+  height: 44px;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  touch-action: manipulation;
+  -webkit-appearance: none;
+}
+
+/* ── SERVIÇOS ── */
+.svc-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+
+.svc-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+
+.svc-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.svc-num {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.svc-card .field { margin-bottom: 10px; }
+.svc-card .field:last-child { margin-bottom: 0; }
+
+.svc-values { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.svc-total-chip {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--acc);
+  background: var(--acc-dim);
+  padding: 3px 8px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+}
+
+/* ── PREVIEW ── */
+.preview-card {
+  background: white;
+  color: #000;
+  border-radius: var(--radius);
+  overflow: hidden;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 8px;
+  margin-bottom: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+.prev-cab {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  border-bottom: 1.5px solid #000;
+  min-height: 60px;
+}
+
+.prev-cab-info {
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: 2px;
+}
+
+.prev-emp-nome { font-size: 13px; font-weight: 900; text-transform: uppercase; line-height: 1.1; }
+.prev-emp-svc  { font-size: 7px; font-weight: bold; text-transform: uppercase; }
+.prev-emp-cont { font-size: 6.5px; font-weight: bold; }
+.prev-emp-end  { font-size: 6px; }
+
+.prev-cab-logo {
+  border-left: 1px solid #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+}
+
+.prev-cab-logo img {
+  max-width: 100%;
+  max-height: 50px;
+  object-fit: contain;
+  filter: grayscale(1);
+}
+
+.prev-logo-placeholder {
+  width: 100%;
+  height: 50px;
+  border: 1px dashed #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 7px;
+  color: #bbb;
+  letter-spacing: 1px;
+}
+
+.prev-bloco2 {
+  border: 1px solid #000;
+  margin: 4px;
+  padding: 4px 5px;
+}
+
+.prev-bloco2-titulo {
+  font-weight: bold;
+  font-size: 7.5px;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+  text-align: center;
+}
+
+.prev-linha {
+  display: flex;
+  gap: 4px;
+  font-size: 7px;
+  margin-bottom: 1.5px;
+  align-items: baseline;
+}
+
+.prev-lbl { font-weight: bold; white-space: nowrap; }
+.prev-ul { border-bottom: 0.5px solid #000; flex: 1; min-height: 9px; }
+
+.prev-table { width: calc(100% - 8px); margin: 0 4px 3px; border-collapse: collapse; }
+.prev-table th { border: 1px solid #000; padding: 2px; font-size: 6.5px; font-weight: bold; text-align: center; }
+.prev-table td { border: 0.5px solid #999; padding: 1px 2px; height: 9px; font-size: 6.5px; }
+
+.prev-total {
+  display: flex;
+  justify-content: flex-end;
+  border: 1.5px solid #000;
+  font-weight: bold;
+  font-size: 8px;
+  margin: 0 4px 4px;
+}
+
+.prev-total-label { padding: 3px 5px; }
+.prev-total-val { border-left: 1.5px solid #000; padding: 3px 6px; min-width: 60px; text-align: right; }
+
+.prev-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 6px 8px 8px;
+  font-size: 6px;
+}
+
+.prev-ass-line { width: 80px; border-top: 0.5px solid #000; margin-bottom: 2px; }
+
+/* ── TOTAL CARD ── */
+.total-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.total-card-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.total-card-val {
+  font-family: 'DM Mono', monospace;
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--acc);
+}
+
+/* ── BOTÕES ── */
+.btn-add {
+  width: 100%;
+  background: transparent;
+  border: 1.5px dashed var(--border);
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 14px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.15s;
+  -webkit-appearance: none;
+  appearance: none;
+  touch-action: manipulation;
+  user-select: none;
+  min-height: 50px;
+}
+
+.btn-add:active { border-color: var(--acc); color: var(--acc); }
+
+/* ── BOTTOM CTA ── */
+.bottom-cta {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 90;
+  padding: 12px 20px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  background: rgba(12,12,12,0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid var(--border);
+}
+
+.btn-gerar {
+  width: 100%;
+  background: var(--acc);
+  color: #000;
+  border: none;
+  border-radius: var(--r-sm);
+  font-family: 'DM Mono', monospace;
+  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  padding: 18px;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  -webkit-appearance: none;
+  appearance: none;
+  touch-action: manipulation;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  user-select: none;
+  min-height: 56px;
+}
+
+.btn-gerar:active { opacity: 0.8; transform: scale(0.98); }
+.btn-gerar:disabled { opacity: 0.35; }
+
+/* ── STATUS ── */
+.status-bar {
+  position: fixed;
+  bottom: 80px;
+  left: 20px;
+  right: 20px;
+  z-index: 50;
+  padding: 12px 18px;
+  border-radius: var(--r-sm);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+  touch-action: none;
+}
+
+.status-bar.show { opacity: 1; }
+.status-bar.ok { background: #0d2e1a; border: 1px solid var(--green); color: var(--green); }
+.status-bar.err { background: #2e0d0d; border: 1px solid var(--red); color: var(--red); }
+.status-bar.loading { background: #1a1a08; border: 1px solid var(--acc); color: var(--acc); }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo-badge">PRO</div>
+    <div class="header-title">Gerador de Recibo</div>
+  </div>
+  <div class="header-sub">v3.0</div>
+</div>
+
+<!-- TABS -->
+<div class="steps-nav">
+  <div class="step-tab active" onclick="goPage(0,this)">Empresa</div>
+  <div class="step-tab" onclick="goPage(1,this)">Cliente</div>
+  <div class="step-tab" onclick="goPage(2,this)">Serviços</div>
+  <div class="step-tab" onclick="goPage(3,this)">Preview</div>
+</div>
+
+<!-- ═══════════ PAGE 0 — EMPRESA ═══════════ -->
+<div class="page active" id="page-0">
+
+  <div class="section-label">Dados da empresa</div>
+
+  <div class="field">
+    <label>Nome da empresa *</label>
+    <input type="text" id="emp-nome" placeholder="Ex: Chaveiro Rey" oninput="update()">
+  </div>
+
+  <div class="field">
+    <label>Slogan / Serviços</label>
+    <input type="text" id="emp-servico" placeholder="Ex: Serviços Automotivo" oninput="update()">
+  </div>
+
+  <div class="grid-2">
+    <div class="field">
+      <label>WhatsApp</label>
+      <input type="tel" id="emp-fone" placeholder="(82) 99999-0000" oninput="update()">
+    </div>
+    <div class="field">
+      <label>CNPJ / CPF</label>
+      <input type="text" id="emp-cnpj" placeholder="00.000.000/0001-00" oninput="update()">
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Endereço</label>
+    <input type="text" id="emp-end" placeholder="Rua, Nº, Bairro, Cidade" oninput="update()">
+  </div>
+
+  <div class="section-label" style="margin-top:8px">Logo</div>
+
+  <label class="logo-upload" id="logo-area" for="logo-file" style="display:block;cursor:pointer">
+    <input type="file" id="logo-file" accept="image/*" onchange="loadLogo(event)" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none">
+    <div class="logo-upload-icon" id="logo-icon">🖼️</div>
+    <div class="logo-upload-text" id="logo-text">Toque para adicionar logo</div>
+    <img id="logo-thumb" class="logo-upload-preview">
+  </label>
+
+  <div style="margin-top:10px">
+    <div class="toggle-row" id="toggle-sem-logo" onclick="setLogoOpt('nenhuma')">
+      <div class="toggle-row-label">Sem logo</div>
+      <div class="toggle-switch"></div>
+    </div>
+    <div class="toggle-row active" id="toggle-com-logo" onclick="setLogoOpt('upload')">
+      <div class="toggle-row-label">Usar logo enviada</div>
+      <div class="toggle-switch"></div>
+    </div>
+  </div>
+
+  <div style="margin-top:20px">
+    <button class="btn-add" style="touch-action:manipulation" onclick="goPage(1,document.querySelectorAll('.step-tab')[1])">
+      Proximo → Cliente
+    </button>
+  </div>
+
+</div>
+
+<!-- ═══════════ PAGE 1 — CLIENTE ═══════════ -->
+<div class="page" id="page-1">
+
+  <div class="section-label">Dados do pedido</div>
+
+  <div class="grid-2">
+    <div class="field">
+      <label>Data *</label>
+      <input type="text" id="data" placeholder="DD/MM/AAAA" oninput="update()">
+    </div>
+    <div class="field">
+      <label>Tipo</label>
+      <select id="tipo-doc" onchange="update()">
+        <option value="VALIDO COMO RECIBO/ORCAMENTO">Recibo/Orç.</option>
+        <option value="ORCAMENTO">Orçamento</option>
+        <option value="RECIBO">Recibo</option>
+        <option value="NOTA DE SERVICO">Nota Serv.</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="section-label">Dados do cliente</div>
+
+  <div class="field">
+    <label>Nome do cliente *</label>
+    <input type="text" id="cli-nome" placeholder="Nome completo" oninput="update()">
+  </div>
+
+  <div class="grid-2">
+    <div class="field">
+      <label>Telefone</label>
+      <input type="tel" id="cli-fone" placeholder="(00) 00000-0000" oninput="update()">
+    </div>
+    <div class="field">
+      <label>Endereço</label>
+      <input type="text" id="cli-end" placeholder="Opcional" oninput="update()">
+    </div>
+  </div>
+
+  <div class="section-label" style="margin-top:8px">Campos opcionais</div>
+
+  <!-- Veículo toggle -->
+  <div class="toggle-row" id="toggle-veiculo" onclick="toggleVeiculo()">
+    <div class="toggle-row-label">Veículo / Placa</div>
+    <div class="toggle-switch"></div>
+  </div>
+  <div class="toggle-content" id="content-veiculo">
+    <div class="grid-2">
+      <div class="field">
+        <label>Veículo</label>
+        <input type="text" id="veiculo" placeholder="Fiat Strada" oninput="update()">
+      </div>
+      <div class="field">
+        <label>Ano/Modelo</label>
+        <input type="text" id="modelo" placeholder="2022" oninput="update()">
+      </div>
+    </div>
+    <div class="field">
+      <label>Placa</label>
+      <input type="text" id="placa" placeholder="BRA-2E19" oninput="update()">
+    </div>
+  </div>
+
+  <!-- Extras toggle -->
+  <div class="toggle-row" id="toggle-extras" onclick="toggleExtras()">
+    <div class="toggle-row-label">Campos extras</div>
+    <div class="toggle-switch"></div>
+  </div>
+  <div class="toggle-content" id="content-extras">
+    <div class="extras-list" id="extras-list"></div>
+    <button class="btn-add" style="touch-action:manipulation" onclick="addExtra()">+ Novo campo</button>
+  </div>
+
+  <div style="margin-top:20px">
+    <button class="btn-add" style="touch-action:manipulation" onclick="goPage(2,document.querySelectorAll('.step-tab')[2])">
+      Proximo → Servicos
+    </button>
+  </div>
+
+</div>
+
+<!-- ═══════════ PAGE 2 — SERVIÇOS ═══════════ -->
+<div class="page" id="page-2">
+
+  <div class="section-label">Itens do recibo</div>
+
+  <div class="svc-list" id="svc-list"></div>
+
+  <button class="btn-add" style="touch-action:manipulation;margin-bottom:16px" onclick="addSvc()">
+    + Adicionar serviço
+  </button>
+
+  <div class="total-card">
+    <span class="total-card-label">Total</span>
+    <span class="total-card-val" id="total-val">R$ 0,00</span>
+  </div>
+
+  <button class="btn-add" onclick="goPage(3,document.querySelectorAll('.step-tab')[3])">
+    Ver preview →
+  </button>
+
+</div>
+
+<!-- ═══════════ PAGE 3 — PREVIEW ═══════════ -->
+<div class="page" id="page-3">
+
+  <div class="section-label">Preview do recibo</div>
+
+  <div class="preview-card" id="preview-recibo">
+
+    <!-- CAB -->
+    <div class="prev-cab">
+      <div class="prev-cab-info">
+        <div class="prev-emp-nome" id="p-nome">NOME DA EMPRESA</div>
+        <div class="prev-emp-svc"  id="p-svc"></div>
+        <div class="prev-emp-cont" id="p-cont"></div>
+        <div class="prev-emp-end"  id="p-end"></div>
+      </div>
+      <div class="prev-cab-logo">
+        <img id="p-logo-img" src="" alt="" style="display:none; max-width:100%; max-height:50px; object-fit:contain; filter:grayscale(1)">
+        <div class="prev-logo-placeholder" id="p-logo-ph">LOGO</div>
+      </div>
+    </div>
+
+    <!-- BLOCO 2 -->
+    <div class="prev-bloco2">
+      <div class="prev-bloco2-titulo" id="p-tipo">VALIDO COMO RECIBO/ORCAMENTO</div>
+      <div class="prev-linha">
+        <span class="prev-lbl">Data:</span><span class="prev-ul" id="p-data"></span>
+        <span class="prev-lbl" style="margin-left:3px">Fone:</span><span class="prev-ul" id="p-clifone"></span>
+      </div>
+      <div class="prev-linha">
+        <span class="prev-lbl">Cliente:</span><span class="prev-ul" id="p-clinome"></span>
+      </div>
+      <div class="prev-linha" id="row-cliend" style="display:none">
+        <span class="prev-lbl">End.:</span><span class="prev-ul" id="p-cliend"></span>
+      </div>
+      <div id="p-veiculo-bloco" style="display:none">
+        <div class="prev-linha">
+          <span class="prev-lbl">Veículo:</span><span class="prev-ul" id="p-veiculo"></span>
+          <span class="prev-lbl" style="margin-left:3px">Placa:</span><span class="prev-ul" id="p-placa"></span>
+        </div>
+      </div>
+      <div id="p-extras-bloco"></div>
+    </div>
+
+    <!-- TABELA -->
+    <table class="prev-table">
+      <thead>
+        <tr>
+          <th style="width:18px">Qtd</th>
+          <th>Discriminação</th>
+          <th style="width:38px">V.Unit.</th>
+          <th style="width:38px">V.Total</th>
+        </tr>
+      </thead>
+      <tbody id="p-svc-tbody"></tbody>
+    </table>
+
+    <!-- TOTAL -->
+    <div class="prev-total">
+      <span class="prev-total-label">TOTAL R$</span>
+      <span class="prev-total-val" id="p-total">0,00</span>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="prev-footer">
+      <div>
+        <div class="prev-ass-line"></div>
+        <span>ASSINATURA</span>
+      </div>
+      <div style="text-align:right; font-weight:bold; line-height:1.5">
+        AGRADECEMOS<br>A PREFERENCIA
+      </div>
+    </div>
+
+  </div>
+
+  <div class="total-card">
+    <span class="total-card-label">Total calculado</span>
+    <span class="total-card-val" id="total-val-preview">R$ 0,00</span>
+  </div>
+
+</div>
+
+<!-- BOTTOM CTA -->
+<div class="bottom-cta">
+  <button class="btn-gerar" id="btn-gerar" onclick="gerarPDF()">
+    ↓ Gerar PDF
+  </button>
+</div>
+
+<!-- STATUS -->
+<div class="status-bar" id="status-bar"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+
+// ── STATE ────────────────────────────────────────────────────
+let svcs   = [];
+let extras = [];
+let logoSrc = null;
+let logoOpt = 'upload';
+let showVeiculo = false;
+let showExtras  = false;
+
+// ── INIT ─────────────────────────────────────────────────────
+(function(){
+  for(let i=0;i<2;i++) svcs.push({quant:'',desc:'',vunit:''});
+  renderSvcs();
+  // Preenche data de hoje automaticamente
+  const hoje = new Date();
+  const d = String(hoje.getDate()).padStart(2,'0');
+  const m = String(hoje.getMonth()+1).padStart(2,'0');
+  const a = hoje.getFullYear();
+  document.getElementById('data').value = `${d}/${m}/${a}`;
+  update();
+})();
+
+// ── NAVIGATION ───────────────────────────────────────────────
+function goPage(idx, tab){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.step-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+idx).classList.add('active');
+  tab.classList.add('active');
+  window.scrollTo({top:0, behavior:'smooth'});
+  if(idx===3) update();
+}
+
+// ── HELPERS ──────────────────────────────────────────────────
+function get(id){ return document.getElementById(id)?.value || ''; }
+
+function fmtBRL(v){
+  return v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+// Remove acentos para jsPDF
+function n(str){
+  if(!str) return '';
+  let s = String(str);
+  s = s.replace(/[àáâãä]/g,'a').replace(/[ÀÁÂÃÄ]/g,'A');
+  s = s.replace(/[èéêë]/g,'e').replace(/[ÈÉÊË]/g,'E');
+  s = s.replace(/[ìíîï]/g,'i').replace(/[ÌÍÎÏ]/g,'I');
+  s = s.replace(/[òóôõö]/g,'o').replace(/[ÒÓÔÕÖ]/g,'O');
+  s = s.replace(/[ùúûü]/g,'u').replace(/[ÙÚÛÜ]/g,'U');
+  s = s.replace(/[ç]/g,'c').replace(/[Ç]/g,'C');
+  s = s.replace(/[ñ]/g,'n').replace(/[Ñ]/g,'N');
+  s = s.replace(/[^\x00-\x7F]/g,'');
+  return s;
+}
+
+function calcTotal(){
+  return svcs.reduce((a,s)=>a+(parseFloat(s.quant)||0)*(parseFloat(s.vunit)||0),0);
+}
+
+// ── STATUS ───────────────────────────────────────────────────
+let statusTimer;
+function showStatus(msg, type){
+  const el = document.getElementById('status-bar');
+  el.textContent = msg;
+  el.className = 'status-bar show ' + type;
+  clearTimeout(statusTimer);
+  if(type !== 'loading') statusTimer = setTimeout(()=>el.classList.remove('show'), 3500);
+}
+
+// ── LOGO ─────────────────────────────────────────────────────
+function loadLogo(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    logoSrc = ev.target.result;
+    document.getElementById('logo-thumb').src = logoSrc;
+    document.getElementById('logo-thumb').style.display = 'block';
+    document.getElementById('logo-icon').style.display = 'none';
+    document.getElementById('logo-text').style.display = 'none';
+    setLogoOpt('upload');
+  };
+  r.readAsDataURL(file);
+}
+
+function setLogoOpt(opt){
+  logoOpt = opt;
+  document.getElementById('toggle-sem-logo').classList.toggle('active', opt==='nenhuma');
+  document.getElementById('toggle-com-logo').classList.toggle('active', opt==='upload');
+  update();
+}
+
+// ── TOGGLES ──────────────────────────────────────────────────
+function toggleVeiculo(){
+  showVeiculo = !showVeiculo;
+  document.getElementById('toggle-veiculo').classList.toggle('active', showVeiculo);
+  document.getElementById('content-veiculo').classList.toggle('show', showVeiculo);
+  update();
+}
+
+function toggleExtras(){
+  showExtras = !showExtras;
+  document.getElementById('toggle-extras').classList.toggle('active', showExtras);
+  document.getElementById('content-extras').classList.toggle('show', showExtras);
+}
+
+// ── EXTRAS ───────────────────────────────────────────────────
+function addExtra(){
+  const id = Date.now();
+  extras.push({id, label:'', valor:''});
+  renderExtras();
+}
+
+function removeExtra(id){
+  extras = extras.filter(e=>e.id!==id);
+  renderExtras(); update();
+}
+
+function renderExtras(){
+  document.getElementById('extras-list').innerHTML = extras.map(e=>`
+    <div class="extra-row">
+      <input type="text" placeholder="Campo" value="${e.label}"
+        oninput="extras.find(x=>x.id==${e.id}).label=this.value;update()">
+      <input type="text" placeholder="Valor" value="${e.valor}"
+        oninput="extras.find(x=>x.id==${e.id}).valor=this.value;update()">
+      <button class="btn-del" onclick="removeExtra(${e.id})">×</button>
+    </div>`).join('');
+}
+
+// ── SERVIÇOS ─────────────────────────────────────────────────
+function addSvc(){
+  svcs.push({quant:'', desc:'', vunit:''});
+  renderSvcs();
+}
+
+function removeSvc(i){
+  svcs.splice(i,1);
+  renderSvcs(); update();
+}
+
+function renderSvcs(){
+  const list = document.getElementById('svc-list');
+  list.innerHTML = svcs.map((s,i) => {
+    const q = parseFloat(s.quant)||0;
+    const v = parseFloat(s.vunit)||0;
+    const vt = q*v;
+    return `
+    <div class="svc-card">
+      <div class="svc-card-header">
+        <span class="svc-num">Item ${String(i+1).padStart(2,'0')}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          ${vt>0 ? `<span class="svc-total-chip">${fmtBRL(vt)}</span>` : ''}
+          <button class="btn-del" onclick="removeSvc(${i})">×</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Descrição</label>
+        <input type="text" value="${s.desc}" placeholder="Descreva o serviço..."
+          oninput="svcs[${i}].desc=this.value;renderSvcs();update()">
+      </div>
+      <div class="svc-values">
+        <div class="field">
+          <label>Quantidade</label>
+          <input type="number" min="1" value="${s.quant}" placeholder="1"
+            oninput="svcs[${i}].quant=this.value;renderSvcs();update()" style="text-align:center">
+        </div>
+        <div class="field">
+          <label>Valor unit.</label>
+          <input type="number" min="0" step="0.01" value="${s.vunit}" placeholder="0,00"
+            oninput="svcs[${i}].vunit=this.value;renderSvcs();update()" style="text-align:right">
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const total = calcTotal();
+  const tv = document.getElementById('total-val');
+  if(tv) tv.textContent = 'R$ ' + fmtBRL(total);
+}
+
+// ── UPDATE PREVIEW ────────────────────────────────────────────
+function update(){
+  // Cab
+  document.getElementById('p-nome').textContent = get('emp-nome') || 'NOME DA EMPRESA';
+  document.getElementById('p-svc').textContent  = get('emp-servico');
+
+  const ef = get('emp-fone'), ec = get('emp-cnpj');
+  let cont = [];
+  if(ef) cont.push('Tel: '+ef);
+  if(ec) cont.push('CNPJ/CPF: '+ec);
+  document.getElementById('p-cont').textContent = cont.join('   ');
+  document.getElementById('p-end').textContent  = get('emp-end');
+
+  // Logo
+  const li = document.getElementById('p-logo-img');
+  const lp = document.getElementById('p-logo-ph');
+  if(logoOpt==='upload' && logoSrc){
+    li.src = logoSrc; li.style.display = 'block';
+    lp.style.display = 'none';
+  } else {
+    li.style.display = 'none';
+    lp.style.display = 'flex';
+  }
+
+  // Bloco 2
+  document.getElementById('p-tipo').textContent    = get('tipo-doc') || 'VALIDO COMO RECIBO/ORCAMENTO';
+  document.getElementById('p-data').textContent    = get('data');
+  document.getElementById('p-clifone').textContent = get('cli-fone');
+  document.getElementById('p-clinome').textContent = get('cli-nome');
+
+  const ce = get('cli-end');
+  document.getElementById('p-cliend').textContent = ce;
+  document.getElementById('row-cliend').style.display = ce ? 'flex' : 'none';
+
+  // Veículo
+  document.getElementById('p-veiculo-bloco').style.display = showVeiculo ? 'block' : 'none';
+  if(showVeiculo){
+    document.getElementById('p-veiculo').textContent = [get('veiculo'),get('modelo')].filter(Boolean).join(' ');
+    document.getElementById('p-placa').textContent   = get('placa');
+  }
+
+  // Extras
+  document.getElementById('p-extras-bloco').innerHTML = extras.filter(e=>e.label).map(e=>`
+    <div class="prev-linha">
+      <span class="prev-lbl">${e.label}:</span>
+      <span class="prev-ul">${e.valor}</span>
+    </div>`).join('');
+
+  // Tabela
+  const total = calcTotal();
+  let rows = '';
+  for(let i=0; i<20; i++){
+    if(i < svcs.length){
+      const s=svcs[i], q=parseFloat(s.quant)||0, v=parseFloat(s.vunit)||0, vt=q*v;
+      rows += `<tr>
+        <td style="text-align:center">${s.quant||''}</td>
+        <td>${s.desc||''}</td>
+        <td style="text-align:right">${v>0?fmtBRL(v):''}</td>
+        <td style="text-align:right">${vt>0?fmtBRL(vt):''}</td>
+      </tr>`;
+    } else {
+      rows += '<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>';
+    }
+  }
+  document.getElementById('p-svc-tbody').innerHTML = rows;
+  document.getElementById('p-total').textContent = fmtBRL(total);
+
+  const tvp = document.getElementById('total-val-preview');
+  if(tvp) tvp.textContent = 'R$ ' + fmtBRL(total);
+  const tv = document.getElementById('total-val');
+  if(tv) tv.textContent = 'R$ ' + fmtBRL(total);
+}
+
+// ── GERAR PDF ─────────────────────────────────────────────────
+async function gerarPDF(){
+  const empNome = get('emp-nome');
+  if(!empNome){
+    showStatus('Preencha o nome da empresa', 'err');
+    goPage(0, document.querySelectorAll('.step-tab')[0]);
+    return;
+  }
+  if(!get('cli-nome')){
+    showStatus('Preencha o nome do cliente', 'err');
+    goPage(1, document.querySelectorAll('.step-tab')[1]);
+    return;
+  }
+
+  const btn = document.getElementById('btn-gerar');
+  btn.disabled = true;
+  showStatus('Gerando PDF...', 'loading');
+
+  try {
+    const {jsPDF} = window.jspdf;
+    const doc = new jsPDF({unit:'mm', format:[100,150], orientation:'portrait'});
+
+    const W=100, H=150, ml=3, cw=W-ml-ml;
+
+    // Borda externa
+    doc.setLineWidth(0.5);
+    doc.rect(ml, 2, cw, H-4);
+
+    // ── CABEÇALHO — 2/3 info | 1/3 logo ─────────────────
+    const cabH    = 22;
+    const cabTop  = 3;
+    const infoW   = cw*(2/3);
+    const logoW   = cw*(1/3);
+    const infoMid = ml + infoW/2;
+
+    // linha fundo cab
+    doc.setLineWidth(0.5);
+    doc.line(ml, cabTop+cabH, ml+cw, cabTop+cabH);
+    // divisória vertical
+    doc.setLineWidth(0.4);
+    doc.line(ml+infoW, cabTop, ml+infoW, cabTop+cabH);
+
+    // Info centralizada
+    let iy = cabTop + 6;
+    doc.setFont('helvetica','bold'); doc.setFontSize(12);
+    doc.text(n(empNome).toUpperCase(), infoMid, iy, {align:'center', maxWidth:infoW-3});
+    iy += 4.5;
+
+    const empS = get('emp-servico');
+    if(empS){
+      doc.setFontSize(6.5);
+      doc.text(n(empS).toUpperCase(), infoMid, iy, {align:'center', maxWidth:infoW-3});
+      iy += 3.5;
+    }
+
+    const ef = get('emp-fone'), ec = get('emp-cnpj');
+    if(ef || ec){
+      doc.setFontSize(5.8);
+      const ct = [ef?'Tel: '+n(ef):'', ec?'CNPJ: '+n(ec):''].filter(Boolean).join('    ');
+      doc.text(ct, infoMid, iy, {align:'center', maxWidth:infoW-3});
+      iy += 3.5;
+    }
+
+    const ee = get('emp-end');
+    if(ee){
+      doc.setFont('helvetica','normal'); doc.setFontSize(5.2);
+      doc.text(n(ee), infoMid, iy, {align:'center', maxWidth:infoW-3});
+    }
+
+    // Logo
+    if(logoOpt==='upload' && logoSrc){
+      try{
+        const lx = ml + infoW + 2;
+        const ly = cabTop + 2;
+        const lw = logoW - 4;
+        const lh = cabH - 4;
+        doc.addImage(logoSrc, 'JPEG', lx, ly, lw, lh, '', 'FAST');
+      } catch(e){}
+    }
+
+    let y = cabTop + cabH + 3;
+
+    // ── BLOCO 2 ──────────────────────────────────────────
+    const linhas = [true, true, true,
+      !!get('cli-end'), showVeiculo,
+      ...extras.filter(e=>e.label).map(()=>true)
+    ];
+    const b2h = 4 + linhas.filter(Boolean).length * 4 + 2;
+
+    doc.setLineWidth(0.4);
+    doc.rect(ml, y, cw, b2h);
+    let by = y + 4;
+
+    // Tipo
+    doc.setFont('helvetica','bold'); doc.setFontSize(7);
+    doc.text(n(document.getElementById('tipo-doc').value), ml+cw/2, by, {align:'center'});
+    by += 4;
+
+    // Data + Fone
+    doc.setFontSize(6.5);
+    doc.text('Data:', ml+2, by);
+    doc.line(ml+9, by+0.5, ml+34, by+0.5);
+    if(get('data')) doc.text(n(get('data')), ml+10, by);
+    doc.text('Fone:', ml+36, by);
+    doc.line(ml+43, by+0.5, ml+cw-2, by+0.5);
+    if(get('cli-fone')) doc.text(n(get('cli-fone')), ml+44, by);
+    by += 4;
+
+    // Cliente
+    doc.setFont('helvetica','bold');
+    doc.text('Cliente:', ml+2, by);
+    doc.line(ml+15, by+0.5, ml+cw-2, by+0.5);
+    doc.setFont('helvetica','normal');
+    if(get('cli-nome')) doc.text(n(get('cli-nome')), ml+16, by);
+    by += 4;
+
+    // End cliente
+    if(get('cli-end')){
+      doc.setFont('helvetica','bold'); doc.text('End.:', ml+2, by);
+      doc.line(ml+11, by+0.5, ml+cw-2, by+0.5);
+      doc.setFont('helvetica','normal'); doc.text(n(get('cli-end')), ml+12, by);
+      by += 4;
+    }
+
+    // Veículo
+    if(showVeiculo){
+      const vei = [get('veiculo'),get('modelo')].filter(Boolean).join(' ');
+      doc.setFont('helvetica','bold'); doc.text('Veiculo:', ml+2, by);
+      doc.line(ml+15, by+0.5, ml+55, by+0.5);
+      doc.setFont('helvetica','normal'); if(vei) doc.text(n(vei), ml+16, by);
+      doc.setFont('helvetica','bold'); doc.text('Placa:', ml+57, by);
+      doc.line(ml+65, by+0.5, ml+cw-2, by+0.5);
+      doc.setFont('helvetica','normal'); if(get('placa')) doc.text(n(get('placa')), ml+66, by);
+      by += 4;
+    }
+
+    // Extras
+    extras.filter(e=>e.label).forEach(e=>{
+      doc.setFont('helvetica','bold');
+      const lw2 = doc.getTextWidth(n(e.label)+':') + 1;
+      doc.text(n(e.label)+':', ml+2, by);
+      doc.line(ml+2+lw2, by+0.5, ml+cw-2, by+0.5);
+      doc.setFont('helvetica','normal');
+      if(e.valor) doc.text(n(e.valor), ml+3+lw2, by);
+      by += 4;
+    });
+
+    y = y + b2h + 2;
+
+    // ── TABELA SERVIÇOS ──────────────────────────────────
+    const colQ=10, colVU=20, colVT=18, colD=cw-colQ-colVU-colVT;
+    const thH=5, tdH=4.5, MAX=20;
+
+    doc.setLineWidth(0.4);
+    doc.rect(ml, y, cw, thH);
+    [colQ, colQ+colD, colQ+colD+colVU].forEach(x=>
+      doc.line(ml+x, y, ml+x, y+thH)
+    );
+    doc.setFont('helvetica','bold'); doc.setFontSize(6);
+    doc.text('Qtd',          ml+colQ/2,                    y+3.3, {align:'center'});
+    doc.text('Discriminacao', ml+colQ+colD/2,               y+3.3, {align:'center'});
+    doc.text('V.Unit.',      ml+colQ+colD+colVU/2,          y+3.3, {align:'center'});
+    doc.text('V.Total',      ml+colQ+colD+colVU+colVT/2,    y+3.3, {align:'center'});
+    y += thH;
+
+    doc.setFont('helvetica','normal'); doc.setFontSize(6); doc.setLineWidth(0.15);
+    for(let i=0; i<MAX; i++){
+      doc.line(ml, y+tdH, ml+cw, y+tdH);
+      [0,colQ,colQ+colD,colQ+colD+colVU,cw].forEach(x=>
+        doc.line(ml+x, y, ml+x, y+tdH)
+      );
+      if(i < svcs.length){
+        const s=svcs[i], q=parseFloat(s.quant)||0, v=parseFloat(s.vunit)||0, vt=q*v;
+        if(s.quant) doc.text(String(s.quant), ml+colQ/2,             y+3.1, {align:'center'});
+        if(s.desc)  doc.text(n(s.desc),       ml+colQ+1,             y+3.1, {maxWidth:colD-2});
+        if(v>0)     doc.text(fmtBRL(v),        ml+colQ+colD+colVU-1,  y+3.1, {align:'right'});
+        if(vt>0)    doc.text(fmtBRL(vt),       ml+colQ+colD+colVU+colVT-1, y+3.1, {align:'right'});
+      }
+      y += tdH;
+    }
+
+    // Total
+    const totH = 6;
+    doc.setLineWidth(0.4);
+    doc.rect(ml, y, cw, totH);
+    doc.line(ml+colQ+colD+colVU, y, ml+colQ+colD+colVU, y+totH);
+    const total = calcTotal();
+    doc.setFont('helvetica','bold'); doc.setFontSize(7);
+    doc.text('TOTAL R$', ml+colQ+colD+colVU-2, y+4, {align:'right'});
+    doc.setFontSize(7.5);
+    doc.text(fmtBRL(total), ml+colQ+colD+colVU+colVT/2, y+4, {align:'center'});
+    y += totH + 5;
+
+    // Rodapé
+    doc.setLineWidth(0.3);
+    doc.line(ml+1, y+2, ml+30, y+2);
+    doc.setFont('helvetica','normal'); doc.setFontSize(5.5);
+    doc.text('ASSINATURA', ml+15, y+5.5, {align:'center'});
+    doc.setFont('helvetica','bold');
+    doc.text('AGRADECEMOS',  ml+cw-1, y+2,   {align:'right'});
+    doc.text('A PREFERENCIA', ml+cw-1, y+5.5, {align:'right'});
+
+    // Download
+    const nome = 'recibo_' + n(empNome).toLowerCase().replace(/\s+/g,'_') + '.pdf';
+    doc.save(nome);
+
+    showStatus('PDF baixado com sucesso!', 'ok');
+
+  } catch(err){
+    showStatus('Erro: ' + err.message, 'err');
+    console.error(err);
+  }
+
+  btn.disabled = false;
+}
+
+// ── TOUCH FALLBACK ───────────────────────────────────────────
+// Garante que clicks funcionem em todos os mobile browsers
+function addTouchSupport(el, fn){
+  if(!el) return;
+  el.addEventListener('touchend', function(e){
+    e.preventDefault();
+    fn(e);
+  }, {passive: false});
+}
+
+// step tabs
+document.querySelectorAll('.step-tab').forEach((tab, idx) => {
+  addTouchSupport(tab, () => goPage(idx, tab));
+});
+
+// toggle rows - reaplica com touchend
+addTouchSupport(document.getElementById('toggle-sem-logo'), () => setLogoOpt('nenhuma'));
+addTouchSupport(document.getElementById('toggle-com-logo'), () => setLogoOpt('upload'));
+addTouchSupport(document.getElementById('toggle-veiculo'),  () => toggleVeiculo());
+addTouchSupport(document.getElementById('toggle-extras'),   () => toggleExtras());
+
+// btn gerar
+addTouchSupport(document.getElementById('btn-gerar'), () => gerarPDF());
+
+// Live update nos inputs de empresa/cliente
+['emp-nome','emp-servico','emp-fone','emp-cnpj','emp-end',
+ 'data','tipo-doc','cli-nome','cli-fone','cli-end',
+ 'veiculo','modelo','placa'].forEach(id=>{
+  const el = document.getElementById(id);
+  if(el) el.addEventListener('input', update);
+});
+</script>
+
+</body>
+</html>
